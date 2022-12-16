@@ -1,7 +1,5 @@
-﻿namespace TexPacker
-{
-    public enum TextureFormat
-    {
+﻿namespace Swizzler {
+    public enum TextureFormat {
         JPG,
         PNG,
         EXR,

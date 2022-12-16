@@ -1,13 +1,11 @@
-﻿using UnityEngine;
-using UnityEditor;
+﻿using UnityEditor;
+using UnityEngine;
 
-namespace TexPacker
-{
-    public enum TextureChannel
-    {
-        ChannelRed,
-        ChannelGreen,
-        ChannelBlue,
-        ChannelAlpha
+namespace Swizzler {
+    public enum TextureChannel {
+        Red,
+        Green,
+        Blue,
+        Alpha,
     }
 }

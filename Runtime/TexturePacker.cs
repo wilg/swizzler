@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TexPacker
-{
-    public class TexturePacker
-    {
+namespace Swizzler {
+    public class TexturePacker {
         private readonly string _shaderName = "Hidden/TexturePacker";
         private Material _material;
 
@@ -15,45 +13,36 @@ namespace TexPacker
 
         public int resolution = 2048;
 
-        public void Initialize()
-        {
-            if (_material == null)
-            {
+        public void Initialize() {
+            if (_material == null) {
                 _material = new Material(Shader.Find(_shaderName));
                 _material.hideFlags = HideFlags.HideAndDontSave;
             }
         }
 
-        public void Add(TextureInput entry)
-        {
+        public void Add(TextureInput entry) {
             _texInputs.Add(entry);
         }
 
-        public void Remove(TextureInput input)
-        {
+        public void Remove(TextureInput input) {
             _texInputs.Remove(input);
         }
 
-        private string GetPropertyName(int i, string param)
-        {
+        private string GetPropertyName(int i, string param) {
             return string.Format("_Input0{0}{1}", i, param);
         }
 
-        public void ClearProperties()
-        {
-            for (int i = 0; i < 6; ++i)
-            {
+        public void ClearProperties() {
+            for (int i = 0; i < 6; ++i) {
                 _material.SetTexture(GetPropertyName(i, "Tex"), Texture2D.blackTexture);
                 _material.SetVector(GetPropertyName(i, "In"), Vector4.zero);
             }
         }
 
-        private Vector4 GetInputs(TextureInput texInput)
-        {
+        private Vector4 GetInputs(TextureInput texInput) {
             Vector4 states = Vector4.zero;
 
-            for (int i = 0; i < 4; ++i)
-            {
+            for (int i = 0; i < 4; ++i) {
                 var state = texInput.GetChannelInput((TextureChannel)i).enabled;
                 states[i] = state ? 1f : 0f;
             }
@@ -61,12 +50,10 @@ namespace TexPacker
             return states;
         }
 
-        private Vector4 GetInverts(TextureInput texInput)
-        {
+        private Vector4 GetInverts(TextureInput texInput) {
             Vector4 states = Vector4.zero;
 
-            for (int i = 0; i < 4; ++i)
-            {
+            for (int i = 0; i < 4; ++i) {
                 var state = texInput.GetChannelInput((TextureChannel)i).invert;
                 states[i] = state ? 1f : 0f;
             }
@@ -74,12 +61,10 @@ namespace TexPacker
             return states;
         }
 
-        private Matrix4x4 GetOutputs(TextureInput texInput)
-        {
+        private Matrix4x4 GetOutputs(TextureInput texInput) {
             Matrix4x4 m = Matrix4x4.zero;
 
-            for (int i = 0; i < 4; ++i)
-            {
+            for (int i = 0; i < 4; ++i) {
                 Vector4 inChannel = Vector4.zero;
                 var output = texInput.GetChannelInput((TextureChannel)i).output;
                 inChannel[(int)output] = 1f;
@@ -89,11 +74,9 @@ namespace TexPacker
             return m;
         }
 
-        public Texture2D Create()
-        {
+        public Texture2D Create() {
             int idx = 0;
-            foreach(var input in _texInputs)
-            {
+            foreach (var input in _texInputs) {
                 var Tex = input.texture;
                 _material.SetTexture(GetPropertyName(idx, "Tex"), Tex);
 

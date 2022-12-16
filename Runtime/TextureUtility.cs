@@ -1,11 +1,8 @@
 ﻿using UnityEngine;
 
-namespace TexPacker
-{
-    public static class TextureUtility
-    {
-        public static Texture2D GenerateTexture(int width, int height, Material mat)
-        {
+namespace Swizzler {
+    public static class TextureUtility {
+        public static Texture2D GenerateTexture(int width, int height, Material mat) {
             RenderTexture tempRT = RenderTexture.GetTemporary(width, height);
             Graphics.Blit(Texture2D.blackTexture, tempRT, mat);
 

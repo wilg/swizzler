@@ -1,9 +1,9 @@
 {
-  "author": "Andy Duboc",
+  "author": "Wil Gieseler",
   "description": "Tool used to merge arbitary texture channels in one texture ouput.",
-  "displayName": "Texture Channel Packer",
+  "displayName": "Swizzler",
   "license": "MIT",
-  "name": "ca.andydbc.unity-texture-packer",
+  "name": "com.wilgieseler.unity.swizzler",
   "unity": "2019.2",
   "unityRelease": "0f1",
   "version": "0.1.0"

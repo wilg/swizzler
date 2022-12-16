@@ -1,30 +1,25 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
 using UnityEditor;
-using System.Collections.Generic;
+using UnityEngine;
 
-namespace TexPacker
-{
-    public class TextureInput
-    {
+namespace Swizzler {
+    public class TextureInput {
         public Texture2D texture;
 
         private Dictionary<TextureChannel, TextureChannelInput> _inputs = new Dictionary<TextureChannel, TextureChannelInput>();
 
-        public TextureInput()
-        {
-            _inputs[TextureChannel.ChannelRed]      = new TextureChannelInput();
-            _inputs[TextureChannel.ChannelGreen]    = new TextureChannelInput();
-            _inputs[TextureChannel.ChannelBlue]     = new TextureChannelInput();
-            _inputs[TextureChannel.ChannelAlpha]    = new TextureChannelInput();
+        public TextureInput() {
+            _inputs[TextureChannel.Red] = new TextureChannelInput();
+            _inputs[TextureChannel.Green] = new TextureChannelInput();
+            _inputs[TextureChannel.Blue] = new TextureChannelInput();
+            _inputs[TextureChannel.Alpha] = new TextureChannelInput();
         }
 
-        public TextureChannelInput GetChannelInput(TextureChannel channel)
-        {
+        public TextureChannelInput GetChannelInput(TextureChannel channel) {
             return _inputs[channel];
         }
 
-        public void SetChannelInput(TextureChannel channel, TextureChannelInput channelInput)
-        {
+        public void SetChannelInput(TextureChannel channel, TextureChannelInput channelInput) {
             _inputs[channel] = channelInput;
         }
     }

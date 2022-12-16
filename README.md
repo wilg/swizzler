@@ -1,10 +1,33 @@
-swizzler (for Unity)
-==========
+# swizzler (for Unity)
 
+A special importer to merge different texture channels into a final texture output.
 
-:hammer: Utility to merge different texture channels into a final texture output. 
+Implemented as a ScriptableImporter so you don't have to "bake" the image once – feel free to tweak the settings and keep your source textures in their original format.
 
-![screenshot](Screenshots/screen00.gif)
+Also features an experimental importer that will create PBR materials and terrain layers from a set of texture images.
+
+![screenshot](Screenshots/inspectorsmall.png)
+
+# Usage
+
+### Packing Arbitrary Channels
+
+- Go to Tools > Swizzler > Create Map
+  - This will create a file called "New Map.swizzlermap" in the currently selected folder
+- Open the map file in the inspector
+- Select source textures and channels
+- Press "Apply"
+- The map file will now be a valid asset that can be used as a texture
+
+### Creating PBR Materials
+
+(experimental, currently HDRP only but should be easy to add support for other render pipelines all at the same time)
+
+- Navigate in your project to a folder containing PBR material textures
+- Go to Tools > Swizzler > Create PBR Material
+  - This will look at the files in your folder and try to guess which ones are which, and repack them into a Unity mask map
+- Ensure the materials were auto-selected correctly and make any changes
+- The .swizzlerpbr asset will contain an HDRP material, mask map, and a terrain layer inside it, which can be used normally like any other asset
 
 ## Install
 
@@ -20,7 +43,7 @@ in the "dependencies" section add:
 {
   "dependencies": {
       ...
-      "ca.andydbc.unity-texture-packer":"https://github.com/wilg/swizzler.git"
+      "com.wilgieseler.unity.swizzler":"https://github.com/wilg/swizzler.git"
       ...
   }
 }
@@ -28,10 +51,10 @@ in the "dependencies" section add:
 
 Find more information about this [here](https://docs.unity3d.com/Manual/upm-git.html).
 
-### Manual 
+### Manual
 
 Dowload this repository as a zip file, extract the archive. <br>
-In Unity, go in "Window" -> "Package Manager"  -> "Add Package from disk"<br>
+In Unity, go in "Window" -> "Package Manager" -> "Add Package from disk"<br>
 Select the "package.json" file located at the root of the package folder.<br>
 
 The tool is located under "Window" and is called "Channel Packer"
@@ -42,4 +65,4 @@ This is still under development and may be buggy.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/andydbc/unity-texture-packer/blob/master/LICENSE) for details.
+MIT. See [LICENSE](https://github.com/wilg/unity-texture-packer/blob/master/LICENSE) for details.
