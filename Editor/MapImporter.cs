@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Swizzler {
 
     [ScriptedImporter(1, "swizzlermap")]
-    public class MapImporter : ScriptedImporter {
+    public class MapImporter : BaseImporter {
 
         public ChannelSource red = new();
         public ChannelSource green = new();
@@ -19,30 +19,33 @@ namespace Swizzler {
         public ChannelSource alpha = new();
 
         public override void OnImportAsset(AssetImportContext ctx) {
+            var maskMap = Pack(ctx);
+            maskMap.name = "MaskMap";
+            ctx.AddObjectToAsset("MaskMap", maskMap);
+        }
+
+        Texture2D Pack(AssetImportContext ctx) {
             var packer = new TexturePacker();
             packer.Initialize();
 
-            packer.Add(InputFor(red, TextureChannel.Red));
-            packer.Add(InputFor(green, TextureChannel.Green));
-            packer.Add(InputFor(blue, TextureChannel.Blue));
-            packer.Add(InputFor(alpha, TextureChannel.Alpha));
+            packer.Add(InputFor(ctx, red, TextureChannel.Red));
+            packer.Add(InputFor(ctx, green, TextureChannel.Green));
+            packer.Add(InputFor(ctx, blue, TextureChannel.Blue));
+            packer.Add(InputFor(ctx, alpha, TextureChannel.Alpha));
 
-            var maskMap = packer.Create().CopyWithMipMaps();
-            maskMap.name = "MaskMap";
-            ctx.AddObjectToAsset("MaskMap", maskMap);
-
+            return packer.Create().CopyWithMipMaps();
         }
 
-        TextureInput InputFor(ChannelSource source, TextureChannel outputChannel) {
-            var input = new TextureInput {
-                texture = source.texture,
-            };
-            var channelInput = input.GetChannelInput(source.sourceChannel);
-            channelInput.enabled = source.texture != null;
-            channelInput.output = outputChannel;
-            channelInput.invert = source.invert;
-            return input;
-        }
+        // #if ODIN_INSPECTOR
+        //         [Sirenix.OdinInspector.Button]
+        // #endif
+        //         void ExportAsPng() {
+        //             var path = EditorUtility.SaveFilePanel("Export as PNG", "", "MaskMap", "png");
+        //             if (string.IsNullOrEmpty(path)) return;
+        //             var png = Pack().EncodeToPNG();
+        //             File.WriteAllBytes(path, png);
+        //             AssetDatabase.Refresh();
+        //         }
 
         [MenuItem("Tools/Swizzler/Create Map")]
         static void CreateMap() {

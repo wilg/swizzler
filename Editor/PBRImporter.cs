@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using RootMotion;
 using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -11,10 +12,10 @@ using UnityEngine;
 namespace Swizzler {
 
     [ScriptedImporter(1, "swizzlerpbr")]
-    public class PBRImporter : ScriptedImporter {
+    public class PBRImporter : BaseImporter {
 
-        public Texture2D albedo;
-        public Texture2D normal;
+        public LazyLoadReference<Texture2D> albedo;
+        public LazyLoadReference<Texture2D> normal;
 
         public Texture2D maskMap;
         public ChannelSource metallic = new();
@@ -25,16 +26,24 @@ namespace Swizzler {
         public Vector2 tileSize = Vector2.one;
         public Vector2 tileOffset = Vector2.zero;
 
+        public bool triplanar = false;
+        // [ShowIf("triplanar")]
+        public float triplanarScale = 1f;
+
         public override void OnImportAsset(AssetImportContext ctx) {
+
+            LoadDependent(ctx, albedo, out var albedoTex);
+            LoadDependent(ctx, normal, out var normalTex);
+
             var packer = new TexturePacker();
             packer.Initialize();
 
             // terrain mask map
 
-            packer.Add(InputFor(metallic, TextureChannel.Red));
-            packer.Add(InputFor(ambientOcclusion, TextureChannel.Green));
-            packer.Add(InputFor(height, TextureChannel.Blue));
-            packer.Add(InputFor(smoothness, TextureChannel.Alpha));
+            packer.Add(InputFor(ctx, metallic, TextureChannel.Red));
+            packer.Add(InputFor(ctx, ambientOcclusion, TextureChannel.Green));
+            packer.Add(InputFor(ctx, height, TextureChannel.Blue));
+            packer.Add(InputFor(ctx, smoothness, TextureChannel.Alpha));
 
             var usedMaskMap = maskMap;
 
@@ -48,16 +57,23 @@ namespace Swizzler {
             var material = new Material(Shader.Find("HDRP/Lit")) {
                 name = "HDRPMaterial",
             };
-            material.SetTexture("_BaseColorMap", albedo);
-            material.SetTexture("_NormalMap", normal);
+            material.SetTexture("_BaseColorMap", albedoTex);
+            material.SetTexture("_NormalMap", normalTex);
             material.SetTexture("_MaskMap", usedMaskMap);
+            if (triplanar) {
+                material.SetFloat("_UVBase", 5);
+                material.SetColor("_UVMappingMask", new Color(0, 0, 0, 0));
+                material.EnableKeyword("_MAPPING_TRIPLANAR");
+                material.SetFloat("_TexWorldScale", triplanarScale);
+                material.SetFloat("_InvTilingScale", 1f / triplanarScale);
+            }
             ctx.AddObjectToAsset("HDRPMaterial", material);
 
             // Terrain Layer
             var terrainLayer = new TerrainLayer {
                 name = "TerrainLayer",
-                diffuseTexture = albedo,
-                normalMapTexture = normal,
+                diffuseTexture = albedoTex,
+                normalMapTexture = normalTex,
                 maskMapTexture = usedMaskMap,
                 tileSize = tileSize,
                 tileOffset = tileOffset,
@@ -68,12 +84,25 @@ namespace Swizzler {
 
         }
 
-        TextureInput InputFor(ChannelSource source, TextureChannel outputChannel) {
+        bool LoadDependent(AssetImportContext ctx, LazyLoadReference<Texture2D> dependency, out Texture2D tex) {
+            if (dependency.isSet && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(dependency, out var guid, out var _)) {
+                ctx.DependsOnArtifact(guid);
+                tex = dependency.asset;
+                return true;
+            }
+            else {
+                tex = null;
+                return false;
+            }
+        }
+
+        TextureInput InputFor(AssetImportContext ctx, ChannelSource source, TextureChannel outputChannel) {
+            LoadDependent(ctx, source.texture, out var loadedTex);
             var input = new TextureInput {
-                texture = source.texture,
+                texture = loadedTex,
             };
             var channelInput = input.GetChannelInput(source.sourceChannel);
-            channelInput.enabled = source.texture != null;
+            channelInput.enabled = loadedTex != null;
             channelInput.output = outputChannel;
             channelInput.invert = source.invert;
             return input;
