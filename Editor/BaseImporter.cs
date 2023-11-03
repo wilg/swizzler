@@ -14,9 +14,10 @@ namespace Swizzler {
     public abstract class BaseImporter : ScriptedImporter {
 
         protected bool LoadDependent(AssetImportContext ctx, LazyLoadReference<Texture2D> dependency, out Texture2D tex) {
-            if (dependency.isSet && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(dependency, out var guid, out var _)) {
+            if (dependency.isSet && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(dependency, out var guidString, out var _)) {
+                var guid = new GUID(guidString);
                 ctx.DependsOnArtifact(guid);
-                tex = dependency.asset;
+                tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(guid));
                 return true;
             }
             else {

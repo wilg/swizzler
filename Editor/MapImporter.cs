@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Swizzler {
 
-    [ScriptedImporter(1, "swizzlermap")]
+    [ScriptedImporter(3, "swizzlermap")]
     public class MapImporter : BaseImporter {
 
         public ChannelSource red = new();
@@ -58,5 +58,4 @@ namespace Swizzler {
             AssetDatabase.Refresh();
         }
     }
-
 }

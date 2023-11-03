@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Swizzler {
 
-    [ScriptedImporter(1, "swizzlerpbr")]
+    [ScriptedImporter(3, "swizzlerpbr")]
     public class PBRImporter : BaseImporter {
 
         public LazyLoadReference<Texture2D> albedo;
@@ -82,30 +82,6 @@ namespace Swizzler {
 
             ctx.SetMainObject(material);
 
-        }
-
-        bool LoadDependent(AssetImportContext ctx, LazyLoadReference<Texture2D> dependency, out Texture2D tex) {
-            if (dependency.isSet && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(dependency, out var guid, out var _)) {
-                ctx.DependsOnArtifact(guid);
-                tex = dependency.asset;
-                return true;
-            }
-            else {
-                tex = null;
-                return false;
-            }
-        }
-
-        TextureInput InputFor(AssetImportContext ctx, ChannelSource source, TextureChannel outputChannel) {
-            LoadDependent(ctx, source.texture, out var loadedTex);
-            var input = new TextureInput {
-                texture = loadedTex,
-            };
-            var channelInput = input.GetChannelInput(source.sourceChannel);
-            channelInput.enabled = loadedTex != null;
-            channelInput.output = outputChannel;
-            channelInput.invert = source.invert;
-            return input;
         }
 
         [MenuItem("Tools/Swizzler/Create PBR Material")]
@@ -185,7 +161,6 @@ namespace Swizzler {
                 if (likelyRoughness == null && roughnessKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
                     likelyRoughness = Extensions.LoadAssetAtGUID<Texture2D>(guid);
                 }
-
             }
 
             System.IO.File.Create(outPath).Dispose();
@@ -210,5 +185,4 @@ namespace Swizzler {
             importer.SaveAndReimport();
         }
     }
-
 }
