@@ -28,6 +28,7 @@ Also features an experimental importer that will create PBR materials and terrai
   - This will look at the files in your folder and try to guess which ones are which, and repack them into a Unity mask map
 - Ensure the materials were auto-selected correctly and make any changes
 - The .swizzlerpbr asset will contain an HDRP material, mask map, and a terrain layer inside it, which can be used normally like any other asset
+  - If you would like to customize the material, simply create a material variant of the imported asset.
 
 ## Install
 
@@ -53,7 +54,7 @@ Find more information about this [here](https://docs.unity3d.com/Manual/upm-git.
 
 ### Manual
 
-Dowload this repository as a zip file, extract the archive. <br>
+Download this repository as a zip file, extract the archive. <br>
 In Unity, go in "Window" -> "Package Manager" -> "Add Package from disk"<br>
 Select the "package.json" file located at the root of the package folder.<br>
 
