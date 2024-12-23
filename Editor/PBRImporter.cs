@@ -11,13 +11,12 @@ using UnityEngine;
 
 namespace Swizzler {
 
-    [ScriptedImporter(3, "swizzlerpbr")]
+    [ScriptedImporter(7, "swizzlerpbr")]
     public class PBRImporter : BaseImporter {
 
-        public LazyLoadReference<Texture2D> albedo;
-        public LazyLoadReference<Texture2D> normal;
+        public Texture2D albedo;
+        public Texture2D normal;
 
-        public Texture2D maskMap;
         public ChannelSource metallic = new();
         public ChannelSource ambientOcclusion = new();
         public ChannelSource height = new();
@@ -31,35 +30,30 @@ namespace Swizzler {
         public float triplanarScale = 1f;
 
         public override void OnImportAsset(AssetImportContext ctx) {
+            var fileName = Path.GetFileNameWithoutExtension(ctx.assetPath);
 
             LoadDependent(ctx, albedo, out var albedoTex);
             LoadDependent(ctx, normal, out var normalTex);
+            LoadDependent(ctx, height.texture, out var heightTex);
 
-            var packer = new TexturePacker();
-            packer.Initialize();
+            var terrainMaskMap = HDRPTerrainMaskMap(ctx, metallic, ambientOcclusion, height, smoothness);
+            terrainMaskMap.name = $"{fileName} HDRP Terrain Mask Map";
+            ctx.AddObjectToAsset("HDRPTerrainMaskMap", terrainMaskMap);
 
-            // terrain mask map
+            var litMaskMap = HDRPMaskMap(ctx, metallic, ambientOcclusion, smoothness);
+            litMaskMap.name = $"{fileName} HDRP Lit Mask Map";
+            ctx.AddObjectToAsset("HDRPLitMaskMap", litMaskMap);
 
-            packer.Add(InputFor(ctx, metallic, TextureChannel.Red));
-            packer.Add(InputFor(ctx, ambientOcclusion, TextureChannel.Green));
-            packer.Add(InputFor(ctx, height, TextureChannel.Blue));
-            packer.Add(InputFor(ctx, smoothness, TextureChannel.Alpha));
-
-            var usedMaskMap = maskMap;
-
-            if (usedMaskMap == null) {
-                usedMaskMap = packer.Create().CopyWithMipMaps();
-                usedMaskMap.name = "MaskMap";
-                ctx.AddObjectToAsset("MaskMap", usedMaskMap);
-            }
 
             // HDRP Material
             var material = new Material(Shader.Find("HDRP/Lit")) {
-                name = "HDRPMaterial",
+                name = $"{fileName} HDRP Lit Material",
             };
             material.SetTexture("_BaseColorMap", albedoTex);
             material.SetTexture("_NormalMap", normalTex);
-            material.SetTexture("_MaskMap", usedMaskMap);
+            material.SetTexture("_MaskMap", litMaskMap);
+            material.SetTexture("_HeightMap", heightTex);
+            // if you want displacement you need to create a material variant
             if (triplanar) {
                 material.SetFloat("_UVBase", 5);
                 material.SetColor("_UVMappingMask", new Color(0, 0, 0, 0));
@@ -71,10 +65,10 @@ namespace Swizzler {
 
             // Terrain Layer
             var terrainLayer = new TerrainLayer {
-                name = "TerrainLayer",
+                name = $"{fileName} Terrain Layer",
                 diffuseTexture = albedoTex,
                 normalMapTexture = normalTex,
-                maskMapTexture = usedMaskMap,
+                maskMapTexture = terrainMaskMap,
                 tileSize = tileSize,
                 tileOffset = tileOffset,
             };
@@ -82,6 +76,48 @@ namespace Swizzler {
 
             ctx.SetMainObject(material);
 
+        }
+
+        Texture2D HDRPTerrainMaskMap(AssetImportContext ctx, ChannelSource metallic, ChannelSource ao, ChannelSource height, ChannelSource smoothness) {
+            return PackRGBA(ctx, metallic, ao, height, smoothness);
+        }
+
+        Texture2D HDRPMaskMap(AssetImportContext ctx, ChannelSource metallic, ChannelSource ao, ChannelSource smoothness) {
+            return PackRGBA(ctx, metallic, ao, null, smoothness);
+        }
+
+        Texture2D PackRGBA(AssetImportContext ctx, ChannelSource r, ChannelSource g, ChannelSource b, ChannelSource a) {
+            var packer = new TexturePacker();
+            packer.Initialize();
+            var maxResolution = -1;
+            if (r != null) {
+                packer.Add(InputFor(ctx, r, TextureChannel.Red));
+                if (r.texture != null) {
+                    maxResolution = Mathf.Max(maxResolution, r.texture.width);
+                }
+            }
+            if (g != null) {
+                packer.Add(InputFor(ctx, g, TextureChannel.Green));
+                if (g.texture != null) {
+                    maxResolution = Mathf.Max(maxResolution, g.texture.width);
+                }
+            }
+            if (b != null) {
+                packer.Add(InputFor(ctx, b, TextureChannel.Blue));
+                if (b.texture != null) {
+                    maxResolution = Mathf.Max(maxResolution, b.texture.width);
+                }
+            }
+            if (a != null) {
+                packer.Add(InputFor(ctx, a, TextureChannel.Alpha));
+                if (a.texture != null) {
+                    maxResolution = Mathf.Max(maxResolution, a.texture.width);
+                }
+            }
+            if (maxResolution != -1) {
+                packer.resolution = maxResolution;
+            }
+            return packer.Create().CopyWithMipMaps();
         }
 
         [MenuItem("Tools/Swizzler/Create PBR Material")]
@@ -102,10 +138,10 @@ namespace Swizzler {
             var prefix = paths.ToArray().PrefixInCommon();
             string outPath;
             if (prefix != "" && prefix != null) {
-                outPath = prefix + "Combined.swizzlerpbr";
+                outPath = prefix + "PBR.swizzlerpbr";
             }
             else {
-                outPath = pathToCurrentFolder + "/Combined.swizzlerpbr";
+                outPath = pathToCurrentFolder + "/PBR.swizzlerpbr";
             }
 
             var filenames = paths.Select(Path.GetFileNameWithoutExtension).ToArray();
@@ -113,7 +149,7 @@ namespace Swizzler {
             // guids for the textures we want to import
             Texture2D likelyAlbedo = null;
             Texture2D likelyNormal = null;
-            Texture2D likelyMaskMap = null;
+            // Texture2D likelyMaskMap = null;
             Texture2D likelyMetallic = null;
             Texture2D likelyAO = null;
             Texture2D likelyHeight = null;
@@ -138,14 +174,13 @@ namespace Swizzler {
 
                 if (likelyAlbedo == null && albedoKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
                     likelyAlbedo = Extensions.LoadAssetAtGUID<Texture2D>(guid);
-                    Debug.Log("Found albedo: " + filename);
                 }
                 if (likelyNormal == null && normalKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
                     likelyNormal = Extensions.LoadAssetAtGUID<Texture2D>(guid);
                 }
-                if (likelyMaskMap == null && maskMapKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
-                    likelyMaskMap = Extensions.LoadAssetAtGUID<Texture2D>(guid);
-                }
+                // if (likelyMaskMap == null && maskMapKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
+                //     likelyMaskMap = Extensions.LoadAssetAtGUID<Texture2D>(guid);
+                // }
                 if (likelyMetallic == null && metallicKeywords.Any(k => filename.Contains(k, StringComparison.OrdinalIgnoreCase))) {
                     likelyMetallic = Extensions.LoadAssetAtGUID<Texture2D>(guid);
                 }
@@ -170,7 +205,6 @@ namespace Swizzler {
             var importer = AssetImporter.GetAtPath(outPath) as PBRImporter;
             importer.albedo = likelyAlbedo;
             importer.normal = likelyNormal;
-            importer.maskMap = likelyMaskMap;
             importer.metallic.texture = likelyMetallic;
             importer.ambientOcclusion.texture = likelyAO;
             importer.height.texture = likelyHeight;
